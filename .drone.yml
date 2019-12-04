@@ -1,0 +1,45 @@
+---
+kind: pipeline
+name: test
+
+steps:
+  - name: dry-run
+    pull: always
+    image: plugins/docker
+    settings:
+      daemon_off: false
+      auto_tag: true
+      dry_run: true
+      repo: goodwillaz/drone-elastic-beanstalk
+      username:
+        from_secret: docker_username
+      password:
+        from_secret: docker_password
+
+trigger:
+  branch:
+    - develop
+  event:
+    - pull_request
+
+---
+kind: pipeline
+name: deploy
+
+steps:
+  - name: publish
+    pull: always
+    image: plugins/docker
+    settings:
+      daemon_off: false
+      auto_tag: true
+      repo: goodwillaz/drone-elastic-beanstalk
+      username:
+        from_secret: docker_username
+      password:
+        from_secret: docker_password
+
+trigger:
+  ref:
+    - refs/heads/master
+    - "refs/tags/**"
