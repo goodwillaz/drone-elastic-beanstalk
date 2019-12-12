@@ -27,9 +27,11 @@ LABEL=${DRONE_TAG:-$DRONE_COMMIT}
 if [ -n "$PLUGIN_LABEL" ]; then
   LABEL=${PLUGIN_LABEL}
 fi
-DEPLOY_OPTS="$DEPLOY_OPTS --label \"$LABEL\""
+DEPLOY_OPTS="$DEPLOY_OPTS --label $LABEL"
 
-DEPLOY_OPTS="$DEPLOY_OPTS --message \"${DRONE_COMMIT_MESSAGE:0:200}\""
+if [ -n "$DRONE_COMMIT_MESSAGE" ]; then
+  DEPLOY_OPTS="$DEPLOY_OPTS --message ${DRONE_COMMIT_MESSAGE:0:200}"
+fi
 
 if [ -n "$PLUGIN_STAGED" ]; then
   touch .ebignore
