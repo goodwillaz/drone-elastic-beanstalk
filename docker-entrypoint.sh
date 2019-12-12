@@ -50,4 +50,4 @@ if [ -n "$PLUGIN_SOURCE" ]; then
   DEPLOY_OPTS="$DEPLOY_OPTS --source codecommit/$PLUGIN_SOURCE"
 fi
 
-echo exec eb deploy $DEPLOY_OPTS
+exec eb deploy $DEPLOY_OPTS
