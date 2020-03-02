@@ -45,7 +45,7 @@ All options are technically optional, though the first two should really be used
 * `access_key` - AWS Access Key Id
 * `secret_key` - AWS Secret Access Key
 * `region` - AWS Region
-* `label` - Label used for application version, order of precedence is this option, `$DRONE_TAG`, then 
+* `label` - Label used for application version, order of precedence is this option, `$DRONE_TAG`, then first 12 characters of  
     `$DRONE_COMMIT`
 * `staged` - Specify if this application should be deployed as is (`true`), or via the git `HEAD` (`false` or 
     not specified)
@@ -53,6 +53,8 @@ All options are technically optional, though the first two should really be used
 * `no_hang` - Return right away, don't wait for `eb deploy` to finish
 * `timeout` - Timeout in minutes for `eb deploy` command, default is 55 minutes
 * `source` - CodeCommit source (_without_ `codecommit/`)
+* `process` - Enable pre-processing of the application version
+* `modules` - An array of modules for this deployment
 * `debug` - Set to true for verbose output
 
 ## License
