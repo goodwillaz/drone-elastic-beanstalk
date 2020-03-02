@@ -45,7 +45,7 @@ All options are technically optional, though the first two should really be used
 * `access_key` - AWS Access Key Id
 * `secret_key` - AWS Secret Access Key
 * `region` - AWS Region
-* `label` - Label used for application version, order of precedence is this option, `$DRONE_TAG`, then 
+* `label` - Label used for application version, order of precedence is this option, `$DRONE_TAG`, then first 12 characters of  
     `$DRONE_COMMIT`
 * `staged` - Specify if this application should be deployed as is (`true`), or via the git `HEAD` (`false` or 
     not specified)

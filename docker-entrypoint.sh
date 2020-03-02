@@ -23,6 +23,7 @@ if [ -n "$PLUGIN_ENVIRONMENT" ]; then
 fi
 
 # Default label
+DRONE_COMMIT=${DRONE_COMMIT:0:12}
 LABEL=${DRONE_TAG:-$DRONE_COMMIT}
 if [ -n "$PLUGIN_LABEL" ]; then
   LABEL=${PLUGIN_LABEL}
