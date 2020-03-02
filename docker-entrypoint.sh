@@ -47,10 +47,18 @@ if [ -n "$PLUGIN_NO_HANG" ]; then
   set -- "$@" --nohang
 fi
 
-set -- "$@" "--timeout" "${PLUGIN_TIMEOUT:-55}"
-
-if [ -n "$PLUGIN_SOURCE" ]; then
-  set -- "$@" "--source" "codecommit/$PLUGIN_SOURCE"
+if [ -n "$PLUGIN_PROCESS" ]; then
+  set -- "$@" --process
 fi
 
-eb deploy --process "$@"
+if [ -n "$PLUGIN_MODULES" ]; then
+  set -- "$@" --modules $PLUGIN_MODULES
+fi
+
+set -- "$@" --timeout "${PLUGIN_TIMEOUT:-55}"
+
+if [ -n "$PLUGIN_SOURCE" ]; then
+  set -- "$@" --source "codecommit/$PLUGIN_SOURCE"
+fi
+
+eb deploy "$@"

@@ -53,6 +53,8 @@ All options are technically optional, though the first two should really be used
 * `no_hang` - Return right away, don't wait for `eb deploy` to finish
 * `timeout` - Timeout in minutes for `eb deploy` command, default is 55 minutes
 * `source` - CodeCommit source (_without_ `codecommit/`)
+* `process` - Enable pre-processing of the application version
+* `modules` - An array of modules for this deployment
 * `debug` - Set to true for verbose output
 
 ## License
