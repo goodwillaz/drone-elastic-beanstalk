@@ -1,45 +1,34 @@
 ---
 kind: pipeline
-name: test
-
-steps:
-  - name: dry-run
-    pull: always
-    image: plugins/docker
-    settings:
-      daemon_off: false
-      auto_tag: true
-      dry_run: true
-      repo: goodwillaz/drone-elastic-beanstalk
-      username:
-        from_secret: docker_username
-      password:
-        from_secret: docker_password
-
-trigger:
-  branch:
-    - develop
-  event:
-    - pull_request
-
----
-kind: pipeline
 name: deploy
+type: docker
 
 steps:
-  - name: publish
-    pull: always
+  - name: build
     image: plugins/docker
     settings:
-      daemon_off: false
+      dry_run: true
+      repo: drone-deploy
+    when:
+      event:
+        - pull_request
+
+  - name: publish
+    image: plugins/docker
+    settings:
       auto_tag: true
-      repo: goodwillaz/drone-elastic-beanstalk
-      username:
-        from_secret: docker_username
+      repo: ghcr.io/goodwillaz/drone-elastic-beanstalk
+      registry: ghcr.io
+      username: goodwillaz-ci
       password:
-        from_secret: docker_password
+        from_secret: gh_token
+    when:
+      event:
+        exclude:
+          - pull_request
 
 trigger:
   ref:
-    - refs/heads/master
+    - refs/heads/develop
     - "refs/tags/**"
+    - "refs/pull/**"
