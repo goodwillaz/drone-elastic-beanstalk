@@ -18,6 +18,9 @@ steps:
       from_secret: aws_access_key
     secret_key:
       from_secret: aws_secret_key
+    single_instance: true
+    ec2_role: aws-elasticbeanstalk-ec2-role
+    service_role: aws-elasticbeanstalk-service-role
     environment: my-eb-environment
     staged: true
 ```
@@ -49,11 +52,14 @@ All options are technically optional, though the first two should really be used
     `$DRONE_COMMIT`
 * `staged` - Specify if this application should be deployed as is (`true`), or via the git `HEAD` (`false` or 
     not specified)
-* `quiet` - Limits output of `eb deploy` command
-* `no_hang` - Return right away, don't wait for `eb deploy` to finish
-* `timeout` - Timeout in minutes for `eb deploy` command, default is 55 minutes
+* `quiet` - Limits output of `eb deploy` or `eb create` command
+* `no_hang` - Return right away, don't wait for `eb deploy` or `eb create` to finish
+* `timeout` - Timeout in minutes for `eb deploy` or `eb create` command, default is 55 minutes
 * `source` - CodeCommit source (_without_ `codecommit/`)
 * `process` - Enable pre-processing of the application version
+* `ec2_role` - The IAM role to use for EC2 instances during `eb create`, will be created if it doesn't exist, defaults to `aws-elasticbeanstalk-ec2-role`
+* `service_role` - The IAM role to use for Elastic Beanstalk operations during `eb create`, will be created if it doesn't exist, defaults to `aws-elasticbeanstalk-service-role`
+* `single_instance` - Whether or not `eb create` should launch as a single instance environment, defaults to `false`
 * `modules` - An array of modules for this deployment
 * `debug` - Set to true for verbose output
 
