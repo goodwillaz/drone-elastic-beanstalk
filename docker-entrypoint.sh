@@ -48,7 +48,7 @@ create() {
   fi
 
   if [ -n "$PLUGIN_LOAD_BALANCER" ]; then
-    set -- "$@" --ls "$PLUGIN_LOAD_BALANCER"
+    set -- "$@" -ls "$PLUGIN_LOAD_BALANCER"
   fi
 
   ENV_VARS=""
