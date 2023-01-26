@@ -41,6 +41,12 @@ $ docker run --rm --privileged \
     drone-elastic-beanstalk:latest
 ```
 
+
+docker build --rm -t ghcr.io/goodwillaz/drone-elastic-beanstalk:latest .
+
+docker run --rm --privileged -v /host/working/directory:/build -w /build -e PLUGIN_ACCESS_KEY=AKIAXV4L5ZPUE2UDA47Q -e PLUGIN_SECRET_KEY=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 -e PLUGIN_ENVIRONMENT=careerservicesapi-qa -e PLUGIN_DEBUG=true -e PLUGIN_SERVICE_ROLE=CI -e PLUGIN_LOAD_BALANCER=arn:aws:elasticloadbalancing:us-west-2:528037563368:loadbalancer/app/mission-load-balancer/070a42654010612b -e PLUGIN_INSTANCE_TYPE=application ghcr.io/goodwillaz/drone-elastic-beanstalk:latest
+
+
 ### Available Settings
 
 All options are technically optional, though the first two should really be used when using this in Drone

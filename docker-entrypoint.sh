@@ -43,6 +43,14 @@ create() {
     set -- "$@" --single
   fi
 
+  if [ -n "$PLUGIN_INSTANCE_TYPE" ]; then
+    set -- "$@" --elb-type
+  fi
+
+  if [ -n "$PLUGIN_LOAD_BALANCER" ]; then
+    set -- "$@" --ls
+  fi
+
   ENV_VARS=""
   while IFS='=' read -r -d '' n v; do
       if ! [ "$n" = "${n#EB_ENV_}" ]; then
