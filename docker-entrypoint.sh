@@ -44,11 +44,11 @@ create() {
   fi
 
   if [ -n "$PLUGIN_INSTANCE_TYPE" ]; then
-    set -- "$@" --elb-type
+    set -- "$@" --elb-type "$PLUGIN_INSTANCE_TYPE"
   fi
 
   if [ -n "$PLUGIN_LOAD_BALANCER" ]; then
-    set -- "$@" --ls
+    set -- "$@" --ls "$PLUGIN_LOAD_BALANCER"
   fi
 
   ENV_VARS=""
