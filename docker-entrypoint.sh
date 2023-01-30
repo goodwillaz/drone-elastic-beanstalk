@@ -43,12 +43,32 @@ create() {
     set -- "$@" --single
   fi
 
-  if [ -n "$PLUGIN_INSTANCE_TYPE" ]; then
-    set -- "$@" --elb-type "$PLUGIN_INSTANCE_TYPE"
+  if [ -n "$PLUGIN_ELB_INSTANCE_TYPE" ]; then
+    set -- "$@" --elb-type "$PLUGIN_ELB_INSTANCE_TYPE"
+  fi
+
+  if [ -n "$PLUGIN_EC2_INSTANCE_TYPE" ]; then
+    set -- "$@" --instance_type "$PLUGIN_EC2_INSTANCE_TYPE"
   fi
 
   if [ -n "$PLUGIN_LOAD_BALANCER" ]; then
     set -- "$@" -ls "$PLUGIN_LOAD_BALANCER"
+  fi
+
+  if [ -n "$PLUGIN_ELB_VPCID" ]; then
+    set -- "$@" --vpc.id "$PLUGIN_ELB_VPCID"
+  fi
+
+  if [ -n "$PLUGIN_EC2_SUBNETS" ]; then
+    set -- "$@" --vpc.ec2subnets "$PLUGIN_EC2_SUBNETS" --vpc.publicip
+  fi
+
+  if [ -n "$PLUGIN_ELB_SUBNETS" ]; then
+    set -- "$@" --vpc.elbsubnets "$PLUGIN_ELB_SUBNETS" --vpc.elbpublic
+  fi
+
+  if [ -n "$PLUGIN_ELB_SECURITYGROUPS" ]; then
+    set -- "$@" --vpc.securitygroups "$PLUGIN_ELB_SECURITYGROUPS"
   fi
 
   ENV_VARS=""
