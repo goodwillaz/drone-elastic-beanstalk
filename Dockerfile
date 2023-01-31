@@ -1,4 +1,4 @@
-FROM python:3.10-alpine
+FROM --platform=linux/amd64 python:3.10-alpine
 MAINTAINER Matt Zuba <matt.zuba@goodwillaz.org>
 
 ENV GLIBC_VER=2.34-r0

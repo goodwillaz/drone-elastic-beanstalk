@@ -41,6 +41,9 @@ $ docker run --rm --privileged \
     drone-elastic-beanstalk:latest
 ```
 
+### For M1 Mac
+Change: 'FROM python:3.10-alpine' to: FROM '--platform=linux/amd64 python:3.10-alpine'
+
 ### Available Settings
 
 All options are technically optional, though the first two should really be used when using this in Drone
@@ -62,6 +65,16 @@ All options are technically optional, though the first two should really be used
 * `single_instance` - Whether or not `eb create` should launch as a single instance environment, defaults to `false`
 * `modules` - An array of modules for this deployment
 * `debug` - Set to true for verbose output
+
+#### These options are needed only when specifying a Shared Load Balancer
+* `elb_instance_type` - Set the load balancer type (should be 'application' for a shared balancer)
+* `ec2_instance_type` - Specify the type of EC2 instance. ex: 't3.nano'
+* `load_balancer` - The ARN to the shared load balancer
+* `elb_vpcId` - VPC id to enable for Elastic Beanstalk. I pulled this from a standing EC2 instance.
+* `ec2_subnets` - Subnets for the EC2 instance.
+* `elb_subnets` - Subnets for the load balancer to use.
+* `elb_security_groups` - Security groups for the load balancer.
+
 
 ## License
 
