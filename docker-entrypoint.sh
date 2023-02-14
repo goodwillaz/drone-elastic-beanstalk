@@ -25,7 +25,7 @@ create() {
     return
   fi
 
-  set -- "$PLUGIN_ENVIRONMENT" --timeout "${PLUGIN_TIMEOUT:-55}"
+  set -- "$PLUGIN_ENVIRONMENT" --timeout "${PLUGIN_TIMEOUT:-55}" --process
 
   if [ "${PLUGIN_QUIET}" == "true" ]; then
     set -- "$@" --quiet
@@ -43,32 +43,24 @@ create() {
     set -- "$@" --single
   fi
 
-  if [ -n "$PLUGIN_ELB_INSTANCE_TYPE" ]; then
-    set -- "$@" --elb-type "$PLUGIN_ELB_INSTANCE_TYPE"
-  fi
-
-  if [ -n "$PLUGIN_EC2_INSTANCE_TYPE" ]; then
-    set -- "$@" --instance_type "$PLUGIN_EC2_INSTANCE_TYPE"
+  if [ -n "$PLUGIN_INSTANCE_TYPES" ]; then
+    set -- "$@" --instance-types "$PLUGIN_INSTANCE_TYPES"
   fi
 
   if [ -n "$PLUGIN_LOAD_BALANCER" ]; then
-    set -- "$@" -ls "$PLUGIN_LOAD_BALANCER"
+    set -- "$@" --shared-lb "$PLUGIN_LOAD_BALANCER" --elb-type application
   fi
 
-  if [ -n "$PLUGIN_ELB_VPCID" ]; then
-    set -- "$@" --vpc.id "$PLUGIN_ELB_VPCID"
+  if [ -n "$PLUGIN_VPC_ID" ]; then
+    set -- "$@" --vpc.id "$PLUGIN_VPC_ID"
   fi
 
   if [ -n "$PLUGIN_EC2_SUBNETS" ]; then
-    set -- "$@" --vpc.ec2subnets "$PLUGIN_EC2_SUBNETS" --vpc.publicip
+    set -- "$@" --vpc.ec2subnets "$PLUGIN_EC2_SUBNETS"
   fi
 
   if [ -n "$PLUGIN_ELB_SUBNETS" ]; then
-    set -- "$@" --vpc.elbsubnets "$PLUGIN_ELB_SUBNETS" --vpc.elbpublic
-  fi
-
-  if [ -n "$PLUGIN_ELB_SECURITYGROUPS" ]; then
-    set -- "$@" --vpc.securitygroups "$PLUGIN_ELB_SECURITYGROUPS"
+    set -- "$@" --vpc.elbsubnets "$PLUGIN_ELB_SUBNETS"
   fi
 
   ENV_VARS=""
@@ -95,7 +87,7 @@ create() {
 }
 
 deploy() {
-  set -- "$PLUGIN_ENVIRONMENT" --timeout "${PLUGIN_TIMEOUT:-55}"
+  set -- "$PLUGIN_ENVIRONMENT" --timeout "${PLUGIN_TIMEOUT:-55}" --process
 
   if [ "${PLUGIN_QUIET}" == "true" ]; then
     set -- "$@" --quiet
