@@ -75,7 +75,6 @@ All options are technically optional, though the first two should really be used
 * `elb_subnets` - Subnets for the load balancer to use.
 * `elb_security_groups` - Security groups for the load balancer.
 
-
 ## License
 
 See the [LICENSE](LICENSE.md) file for license rights and limitations (BSD 3-clause).
