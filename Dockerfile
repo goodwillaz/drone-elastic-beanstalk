@@ -1,4 +1,4 @@
-FROM python:3.10-alpine
+FROM --platform=linux/amd64 python:3.10-alpine
 MAINTAINER Matt Zuba <matt.zuba@goodwillaz.org>
 
 ENV GLIBC_VER=2.34-r0
@@ -14,8 +14,8 @@ RUN apk add --no-cache --no-progress --virtual build-deps binutils curl \
     && curl -sLO https://github.com/sgerrand/alpine-pkg-glibc/releases/download/${GLIBC_VER}/glibc-${GLIBC_VER}.apk \
     && curl -sLO https://github.com/sgerrand/alpine-pkg-glibc/releases/download/${GLIBC_VER}/glibc-bin-${GLIBC_VER}.apk \
     && apk add --no-cache \
-        glibc-${GLIBC_VER}.apk \
-        glibc-bin-${GLIBC_VER}.apk \
+        --force-overwrite glibc-${GLIBC_VER}.apk \
+        --force-overwrite glibc-bin-${GLIBC_VER}.apk \
     && curl -sL https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip -o awscliv2.zip \
     && unzip awscliv2.zip \
     && aws/install \
