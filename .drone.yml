@@ -8,7 +8,7 @@ steps:
     image: plugins/docker
     settings:
       dry_run: true
-      repo: drone-deploy
+      repo: drone-elastic-beanstalk
     when:
       event:
         - pull_request
