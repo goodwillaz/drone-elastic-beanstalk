@@ -1,6 +1,6 @@
-#!/bin/ash
+#!/bin/bash
 
-if [ "$1" == "/bin/sh" ]; then
+if [ "$1" == "/bin/bash" ]; then
   exec "$@"
 fi
 
@@ -14,150 +14,78 @@ if [ "${PLUGIN_DEBUG}" == "true" ]; then
   set -x
 fi
 
-create() {
-  # If we don't have a .elasticbeanstalk folder, we can't create an environment, so bail
-  if ! [ -d .elasticbeanstalk ]; then
-    return
-  fi
-
-  # If the environment already exists, just leave
-  if eb list | grep -q "$PLUGIN_ENVIRONMENT"; then
-    return
-  fi
-
-  set -- "$PLUGIN_ENVIRONMENT" --timeout "${PLUGIN_TIMEOUT:-55}" --process
-
-  if [ "${PLUGIN_QUIET}" == "true" ]; then
-    set -- "$@" --quiet
-  fi
-
-  if [ -n "$PLUGIN_NO_HANG" ]; then
-    set -- "$@" --nohang
-  fi
-
-  if [ "${PLUGIN_DEBUG}" == "true" ]; then
-    set -- "$@" --verbose
-  fi
-
-  if [ -n "$PLUGIN_SINGLE_INSTANCE" ]; then
-    set -- "$@" --single
-  fi
-
-  if [ -n "$PLUGIN_INSTANCE_TYPES" ]; then
-    set -- "$@" --instance-types "$PLUGIN_INSTANCE_TYPES"
-  fi
-
-  if [ -n "$PLUGIN_LOAD_BALANCER" ]; then
-    set -- "$@" --shared-lb "$PLUGIN_LOAD_BALANCER" --elb-type application
-  fi
-
-  if [ -n "$PLUGIN_VPC_ID" ]; then
-    set -- "$@" --vpc.id "$PLUGIN_VPC_ID"
-  fi
-
-  if [ -n "$PLUGIN_EC2_SUBNETS" ]; then
-    set -- "$@" --vpc.ec2subnets "$PLUGIN_EC2_SUBNETS"
-  fi
-
-  if [ -n "$PLUGIN_ELB_SUBNETS" ]; then
-    set -- "$@" --vpc.elbsubnets "$PLUGIN_ELB_SUBNETS"
-  fi
-
-  ENV_VARS=""
-  while IFS='=' read -r -d '' n v; do
-      if ! [ "$n" = "${n#EB_ENV_}" ]; then
-          ENV_VARS=${ENV_VARS},${n#EB_ENV_}=${v}
-      fi
-  done < <(env -0)
-  if [ -n "$ENV_VARS" ]; then
-    set -- "$@" --envvars "${ENV_VARS#,}"
-  fi
-
-  if [ -n "$PLUGIN_EC2_ROLE" ]; then
-    create_ec2_role
-    set -- "$@" --instance_profile "$PLUGIN_EC2_ROLE"
-  fi
-
-  if [ -n "$PLUGIN_SERVICE_ROLE" ]; then
-    create_service_role
-    set -- "$@" --service-role "$PLUGIN_SERVICE_ROLE"
-  fi
-
-  exec eb create "$@"
-}
+if [ -z "$PLUGIN_APPLICATION" ]; then
+  echo "The application setting is required"
+  exit 1;
+fi
 
 deploy() {
-  set -- "$PLUGIN_ENVIRONMENT" --timeout "${PLUGIN_TIMEOUT:-55}" --process
-
-  if [ "${PLUGIN_QUIET}" == "true" ]; then
-    set -- "$@" --quiet
-  fi
-
-  if [ -n "$PLUGIN_NO_HANG" ]; then
-    set -- "$@" --nohang
-  fi
-
-  if [ "${PLUGIN_DEBUG}" == "true" ]; then
-    set -- "$@" --verbose
-  fi
-
   # Default label
   DRONE_COMMIT=${DRONE_COMMIT:0:12}
-  LABEL=${DRONE_TAG:-$DRONE_COMMIT}
-  if [ -n "$PLUGIN_LABEL" ]; then
-    LABEL=${PLUGIN_LABEL}
-  fi
-  set -- "$@" --label "$LABEL"
+  VERSION_LABEL=${DRONE_TAG:-$DRONE_COMMIT}
+  export VERSION_LABEL=${PLUGIN_LABEL:-$VERSION_LABEL}
 
-  if [ -n "$DRONE_COMMIT_MESSAGE" ]; then
-    set -- "$@" "--message" "${DRONE_COMMIT_MESSAGE:0:200}"
+  if [ -z "$PLUGIN_DEPLOY_CMD" ]; then
+    PLUGIN_DEPLOY_CMD="cdk deploy --all --require-approval never --progress events"
   fi
 
-  if [ -n "$PLUGIN_STAGED" ]; then
-    touch .ebignore
-    set -- "$@" --staged # Probably not needed due to .ebignore
+  if [ -f package-lock.json ]; then
+    echo "Installing dependencies from package-lock.json..."
+    npm ci
+  elif [ -f package.json ]; then
+    echo "Installing dependencies from package.json..."
+    npm install
   fi
 
-  if [ -n "$PLUGIN_PROCESS" ]; then
-    set -- "$@" --process
+  if [ -n "$PLUGIN_CDK_ONLY" ]; then
+      exec $PLUGIN_DEPLOY_CMD
   fi
 
-  if [ -n "$PLUGIN_MODULES" ]; then
-    set -- "$@" --modules "$PLUGIN_MODULES"
+  # Check if the version exists
+  VERSION_CHECK=$(aws elasticbeanstalk describe-application-versions --application-name "$PLUGIN_APPLICATION" --version-labels "$VERSION_LABEL" --query 'ApplicationVersions[0].VersionLabel' --output text)
+  if [ "$VERSION_CHECK" != "$VERSION_LABEL" ]; then
+    # Create a zip file - if ebignore present or if staged, create a stash and archive that: https://stackoverflow.com/a/12010656
+    if [ -f .ebignore ]; then
+      mv .ebignore .gitignore
+      PLUGIN_STAGED=true
+    fi
+
+    if [ -n "$PLUGIN_STAGED" ]; then
+      git rm --cached -r . 2>&1 > /dev/null
+      git add . 2>&1 > /dev/null
+      GIT_COMMITTER_NAME='Drone' GIT_COMMITTER_EMAIL='drone@git.hub' git commit --all --allow-empty-message -m "" --author "Drone <drone@git.hub>" 2>&1 > /dev/null
+    fi
+
+    # Create an archive of our project
+    git archive --format=zip -o /tmp/${VERSION_LABEL}.zip HEAD
+
+    # Get the S3 bucket to use for app versions
+    export S3_BUCKET=$(aws elasticbeanstalk create-storage-location --output text)
+
+    # Upload the version to S3
+    export S3_KEY="${PLUGIN_APPLICATION}/${VERSION_LABEL}.zip"
+    echo "Uploading version ${VERSION_LABEL} to ${S3_KEY}..."
+    aws s3 mv /tmp/${VERSION_LABEL}.zip s3://${S3_BUCKET}/${S3_KEY} 2>&1 > /dev/null
+
+    if [ -z "$DRONE_COMMIT_MESSAGE" ]; then
+      DRONE_COMMIT_MESSAGE="${VERSION_LABEL}"
+    fi
+    DRONE_COMMIT_MESSAGE="${DRONE_COMMIT_MESSAGE:0:200}"
+
+    # Create the version in the application (and the application if it doesn't exist)
+    echo "Creating application version..."
+    aws elasticbeanstalk create-application-version \
+      --application-name "$PLUGIN_APPLICATION" \
+      --version-label "$VERSION_LABEL" \
+      --description "$DRONE_COMMIT_MESSAGE" \
+      --source-bundle S3Bucket="$S3_BUCKET",S3Key="$S3_KEY" \
+      2>&1 > /dev/null
   fi
 
-  if [ -n "$PLUGIN_SOURCE" ]; then
-    set -- "$@" --source "codecommit/$PLUGIN_SOURCE"
-  fi
-
-  exec eb deploy "$@"
-}
-
-create_ec2_role() {
-  if ! aws iam get-role --role-name "$PLUGIN_EC2_ROLE"; then
-    aws iam create-role --role-name "$PLUGIN_EC2_ROLE" --assume-role-policy-document "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"ec2.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
-    aws iam attach-role-policy --role-name "$PLUGIN_EC2_ROLE" --policy-arn "arn:aws:iam::aws:policy/AWSElasticBeanstalkMulticontainerDocker"
-    aws iam attach-role-policy --role-name "$PLUGIN_EC2_ROLE" --policy-arn "arn:aws:iam::aws:policy/AWSElasticBeanstalkWebTier"
-    aws iam attach-role-policy --role-name "$PLUGIN_EC2_ROLE" --policy-arn "arn:aws:iam::aws:policy/AWSElasticBeanstalkWorkerTier"
-    aws iam create-instance-profile --instance-profile-name "$PLUGIN_EC2_ROLE"
-    aws iam add-role-to-instance-profile --instance-profile-name "$PLUGIN_EC2_ROLE" --role-name "$PLUGIN_EC2_ROLE"
-  fi
-}
-
-create_service_role() {
-  if ! aws iam get-role --role-name "$PLUGIN_SERVICE_ROLE"; then
-    aws iam create-role --role-name "$PLUGIN_SERVICE_ROLE" --assume-role-policy-document "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"elasticbeanstalk.amazonaws.com\"},\"Action\":\"sts:AssumeRole\",\"Condition\":{\"StringEquals\":{\"sts:ExternalId\":\"elasticbeanstalk\"}}}]}"
-    aws iam attach-role-policy --role-name "$PLUGIN_SERVICE_ROLE" --policy-arn "arn:aws:iam::aws:policy/service-role/AWSElasticBeanstalkEnhancedHealth"
-    aws iam attach-role-policy --role-name "$PLUGIN_SERVICE_ROLE" --policy-arn "arn:aws:iam::aws:policy/AmazonElastiCacheReadOnlyAccess"
-    aws iam attach-role-policy --role-name "$PLUGIN_SERVICE_ROLE" --policy-arn "arn:aws:iam::aws:policy/service-role/AWSElasticBeanstalkService"
-  fi
+  exec $PLUGIN_DEPLOY_CMD
 }
 
 # If not sourced, run it!
 if ! [ "sh" == "${0##*/}" ]; then
-  # Create the environment if it doesn't exist
-  create
-
-  # Deploy code (only if we didn't have to create the environment)!
   deploy
 fi
