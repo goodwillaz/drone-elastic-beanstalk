@@ -25,11 +25,25 @@ deploy() {
   VERSION_LABEL=${DRONE_TAG:-$DRONE_COMMIT}
   export VERSION_LABEL=${PLUGIN_LABEL:-$VERSION_LABEL}
 
+  if [ -z "$PLUGIN_DEPLOY_CMD" ]; then
+    PLUGIN_DEPLOY_CMD="cdk deploy --all --require-approval never --progress events"
+  fi
+
+  if [ -f package-lock.json ]; then
+    echo "Installing dependencies from package-lock.json..."
+    npm ci
+  elif [ -f package.json ]; then
+    echo "Installing dependencies from package.json..."
+    npm install
+  fi
+
+  if [ -n "$PLUGIN_CDK_ONLY" ]; then
+      exec $PLUGIN_DEPLOY_CMD
+  fi
+
   # Check if the version exists
   VERSION_CHECK=$(aws elasticbeanstalk describe-application-versions --application-name "$PLUGIN_APPLICATION" --version-labels "$VERSION_LABEL" --query 'ApplicationVersions[0].VersionLabel' --output text)
-  if [ "$VERSION_CHECK" = "$VERSION_LABEL" ]; then
-    echo "Version already exists, not recreating..."
-  else
+  if [ "$VERSION_CHECK" != "$VERSION_LABEL" ]; then
     # Create a zip file - if ebignore present or if staged, create a stash and archive that: https://stackoverflow.com/a/12010656
     if [ -f .ebignore ]; then
       mv .ebignore .gitignore
@@ -66,18 +80,6 @@ deploy() {
       --description "$DRONE_COMMIT_MESSAGE" \
       --source-bundle S3Bucket="$S3_BUCKET",S3Key="$S3_KEY" \
       2>&1 > /dev/null
-  fi
-
-  if [ -f package-lock.json ]; then
-    echo "Installing dependencies from package-lock.json..."
-    npm ci
-  elif [ -f package.json ]; then
-    echo "Installing dependencies from package.json..."
-    npm install
-  fi
-
-  if [ -z "$PLUGIN_DEPLOY_CMD" ]; then
-    PLUGIN_DEPLOY_CMD="cdk deploy --all --require-approval never --progress events"
   fi
 
   exec $PLUGIN_DEPLOY_CMD
