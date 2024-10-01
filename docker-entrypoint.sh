@@ -14,21 +14,7 @@ if [ "${PLUGIN_DEBUG}" == "true" ]; then
   set -x
 fi
 
-if [ -z "$PLUGIN_APPLICATION" ]; then
-  echo "The application setting is required"
-  exit 1;
-fi
-
 deploy() {
-  # Default label
-  DRONE_COMMIT=${DRONE_COMMIT:0:12}
-  VERSION_LABEL=${DRONE_TAG:-$DRONE_COMMIT}
-  export VERSION_LABEL=${PLUGIN_LABEL:-$VERSION_LABEL}
-
-  if [ -z "$PLUGIN_DEPLOY_CMD" ]; then
-    PLUGIN_DEPLOY_CMD="cdk deploy --all --require-approval never --progress events"
-  fi
-
   if [ -f package-lock.json ]; then
     echo "Installing dependencies from package-lock.json..."
     npm ci
@@ -39,6 +25,20 @@ deploy() {
 
   if [ -n "$PLUGIN_CDK_ONLY" ]; then
       exec $PLUGIN_DEPLOY_CMD
+  fi
+
+  if [ -z "$PLUGIN_APPLICATION" ]; then
+    echo "The application setting is required"
+    exit 1;
+  fi
+
+  # Default label
+  DRONE_COMMIT=${DRONE_COMMIT:0:12}
+  VERSION_LABEL=${DRONE_TAG:-$DRONE_COMMIT}
+  export VERSION_LABEL=${PLUGIN_LABEL:-$VERSION_LABEL}
+
+  if [ -z "$PLUGIN_DEPLOY_CMD" ]; then
+    PLUGIN_DEPLOY_CMD="cdk deploy --all --require-approval never --progress events"
   fi
 
   # Check if the version exists
